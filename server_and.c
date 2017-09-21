@@ -10,29 +10,26 @@
 #define EDGE_UDP_PORT "24720" 
 #define AND_UDP_PORT "22720"
 
-void error(char *msg)  //This function is copied from the allowed youtube video to help me print out error faster.
+void error(char *msg) 
 {
 	perror(msg);
 	exit(0);
 }
 
 //This function is used to send the results to Edge server as a client with server port number: 24720
-void Send_to_Edge(char tempy[], char tempz[], char ans[], int count)  //Most part of this function is copied from Beej's book from section 6.3
+void Send_to_Edge(char tempy[], char tempz[], char ans[], int count) 
 {
   	int sockfd;  //Define some characters firstly
   	struct addrinfo hints, *servinfo, *p;
   	int rv;
   	int numbytes;
-
   	memset(&hints, 0, sizeof hints);
   	hints.ai_family = AF_UNSPEC;
   	hints.ai_socktype = SOCK_DGRAM;
-
   	if ((rv = getaddrinfo("localhost", EDGE_UDP_PORT, &hints, &servinfo)) != 0) 
 	{
     		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
   	}
-
   	for(p = servinfo; p != NULL; p = p->ai_next)   //Input the parameters
 	{
     		if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) 
@@ -42,7 +39,6 @@ void Send_to_Edge(char tempy[], char tempz[], char ans[], int count)  //Most par
     		}
     		break;
   	}
-
   	if (p == NULL) 
 	{
     		fprintf(stderr, "talker: failed to bind socket\n");
@@ -54,7 +50,6 @@ void Send_to_Edge(char tempy[], char tempz[], char ans[], int count)  //Most par
     		perror("talker: sendto");
     		exit(1);
   	}
-
   	freeaddrinfo(servinfo);
 	printf("%s and %s = %s  (This is the result of No.%d line received from edge server.)\n", tempy, tempz, ans, count);  //Print out the calculation result and line number
   	close(sockfd);
@@ -69,7 +64,6 @@ int main ()
 	memset(buf,0,sizeof(buf));
 
 	//These characters are used to cut the line string into three parts("and" or "or" part, first binary number part, and second binary part)
-
 	char x[5];  //x stands for the "and" or "or" part
 	char y[11];  //y stands for the first binary number part
 	char z[11];  //z stands for the second binary number part
@@ -97,34 +91,27 @@ int main ()
 	{
 		error("Opening socket.");
 	}
-
 	length = sizeof(server);
 	bzero(&server, length);
 	server.sin_family = AF_INET;
 	server.sin_addr.s_addr = INADDR_ANY;
 	server.sin_port = htons(atoi(AND_UDP_PORT));
-
 	if (bind(sock, (struct sockaddr *)&server, length) < 0)  //Bind the socket
 	{
 		error("Binding");
 	}
-	
 	fromlen = sizeof(struct sockaddr_in);
-
 	printf("The Server AND is up and running using UDP on port %s.\n", AND_UDP_PORT);
 	printf("The Server AND is ready to receive lines from the edge server for AND computation. The computation results are:\n");
 
 	//Transmit frames and analysis data in the next part
-
 	while (1)  //Server is a non-stop device, so it is always trying to get the frames with correct IP address through the port number  
 	{
 		n = recvfrom(sock, buf, 300, 0, (struct sockaddr *)&from, &fromlen);  //Receive the frame and save the data into buf
-
 		if (n < 0)
 		{
 			error("Receive\n");
 		}
-
 		for (a;a<sizeof(buf);a++)  //All the data before the first comma is "and" or "or" part, so we save them into x[]
 		{
 			if (buf[a]!=',')
@@ -132,14 +119,11 @@ int main ()
 				x[j] = buf[a];
 				j++;
 			}
-			
 			else if (buf[a]==',')
 			break;
 		}
-		
 		x[j] = '\0';
 		a++;
-
 		for (a;a<sizeof(buf);a++)  //All the data between the first comma and the second comma is the first binary number part, so we save them into y[]
 		{
 			if (buf[a]!=',')
@@ -147,14 +131,11 @@ int main ()
 				y[m] = buf[a];
 				m++;
 			}
-			
 			else if (buf[a]==',')
 			break;
 		}
-
 		y[m] = '\0';
 		a++;
-
 		for (a;a<sizeof(buf);a++)  //All the data between the second comma and the '\n' is the second binary number part, so we save them into z[]
 		{
 			if (buf[a]!='\n')
@@ -162,22 +143,17 @@ int main ()
 				z[k] = buf[a];
 				k++;
 			}
-			
 			else if (buf[a]=='\n')
 			break;
 		}
 		z[k] = '\0';
-
 		flag = 0;
 		r = 0;
-
 		if (strlen(y)<strlen(z))  //If the string length of y is less than string length of z, then we pad some "0"s before y string to help us calculate the result
 		{
 			w=(strlen(z)-strlen(y));
-
 			strcpy (tempy,y);
 			strcpy (tempz,z);
-
 			for(d;d<strlen(z);d++)
 			{
 				if(d<w)
@@ -200,15 +176,11 @@ int main ()
 			}
 			ans[r] = '\0';
 		}
-
 		else if (strlen(y)>strlen(z))  //If the string length of y is larger than string length of z, then we pad some "0"s before z string to help us calculate the result
 		{
-
 			v=(strlen(y)-strlen(z));
-
 			strcpy (tempy,y);
 			strcpy (tempz,z);
-
 			for(d;d<strlen(y);d++)
 			{
 				if(d<v)
@@ -231,12 +203,10 @@ int main ()
 			}
 			ans[r] = '\0';
 		}	
-
 		else if (strlen(y)==strlen(z))  //If the string length of y is equal to the string length of z, then we don't need to pad any "0"
 		{
 			strcpy (tempy,y);
 			strcpy (tempz,z);
-
 			for(d;d<strlen(y);d++)
 			{
 				if (((y[d]&z[d])=='0')&&(flag==1))
@@ -251,17 +221,12 @@ int main ()
 			}
 			ans[r] = '\0';
 		}
-
 		if (strlen(ans)<2)  //If the result is all 0's for every single bits, then we save one "0" at the beginning
 		{
 			ans[0] = '0';
 			ans[1] = '\0';
 		}
-
 		Send_to_Edge(tempy, tempz, ans, count);
-
-		//printf("%s and %s = %s  (This is the result of No.%d line received from edge server.)\n", tempy, tempz, ans, count);	//Show that the number of this calculation
-
 		memset(x,0,sizeof(x));  //Clean all the parameters in the while loop to get ready for the next calculation
 		memset(y,0,sizeof(y));
 		memset(z,0,sizeof(z));
@@ -275,6 +240,5 @@ int main ()
 		d=0;
 		count++;
 	}
-
 	return 0;
 }
